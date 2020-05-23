@@ -16,6 +16,7 @@ class DatabaseHelper {
   static final columnDescription = 'description';
   static final columnPriority = 'priority';
   static final columnTimer = 'Timer';
+  static final columnCurrentDayTasks = "currentDayTasks";
 
   // make this a singleton class
   DatabaseHelper._privateConstructor();
@@ -47,7 +48,8 @@ class DatabaseHelper {
             $columnTitle TEXT NOT NULL,
             $columnDescription TEXT,
             $columnPriority INTEGER,
-            $columnTimer , TEXT
+            $columnTimer, TEXT,
+            $columnCurrentDayTasks, BLOB
           )
           ''');
   }

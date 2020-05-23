@@ -21,15 +21,14 @@ class AddNotePage extends StatefulWidget {
 }
 
 class AddNotePageState extends State<AddNotePage> {
-  final GlobalKey<FormState> _key = GlobalKey<FormState>();
+  final GlobalKey<FormState> _formValidatorKey = GlobalKey<FormState>();
   TextEditingController _titleController = TextEditingController();
   TextEditingController _descriptionController = TextEditingController();
-  List<DropdownMenuItem> priorityList = List();
-  List<DropdownMenuItem> timeList = List();
+  List<DropdownMenuItem> priorityList = [];
   int _selectedPriorityValue;
   String title, description, time;
-  int _hour, _minute;
-  int _totalDuration;
+  int _hour = 0, _minute = 0, _seconds = 0;
+  DateTime _taskDuration = DateTime(DateTime.now().year);
   DatabaseHelper dbHelper;
 
   AddNotePageState({this.dbHelper});
@@ -41,11 +40,17 @@ class AddNotePageState extends State<AddNotePage> {
     _selectedPriorityValue = widget.task?.priority;
     _titleController.text = widget.task?.title ?? '';
     _descriptionController.text = widget.task?.description ?? '';
-    List<String> _duration = (widget.task?.timer != null) ? (widget.task.timer / 60).toString().split(".") : [];
-    if (_duration != null && _duration.length == 2) {
-      _hour = int.parse(_duration[0]);
-      _minute = int.parse(_duration[1].substring(0, 1));
-    }
+    if(widget.task?.timer != null)
+      _taskDuration = DateTime.fromMillisecondsSinceEpoch(widget.task?.timer);
+    _hour = _taskDuration.hour;
+    _minute = _taskDuration.minute;
+    _seconds = _taskDuration.second;
+//    List<String> _duration = (widget.task?.timer != null) ? CommonUtils.getTotalSecondsInHours(widget.task.timer * 60) : [];
+//    if (_duration != null && _duration.length == 3) {
+//      _hour = int.parse(_duration[0]);
+//      _minute = int.parse(_duration[1]);
+//      _seconds = int.parse(_duration[2]);
+//    }
   }
 
   void _insertTask() async {
@@ -54,7 +59,7 @@ class AddNotePageState extends State<AddNotePage> {
       DatabaseHelper.columnTitle: _titleController.text,
       DatabaseHelper.columnDescription: _descriptionController.text,
       DatabaseHelper.columnPriority: _selectedPriorityValue,
-      DatabaseHelper.columnTimer: _totalDuration,
+      DatabaseHelper.columnTimer: _taskDuration.millisecondsSinceEpoch,
     };
     final id = await dbHelper.insert(row);
     if (id != null) {
@@ -76,7 +81,7 @@ class AddNotePageState extends State<AddNotePage> {
       DatabaseHelper.columnTitle: _titleController.text,
       DatabaseHelper.columnDescription: _descriptionController.text,
       DatabaseHelper.columnPriority: _selectedPriorityValue,
-      DatabaseHelper.columnTimer: _totalDuration,
+      DatabaseHelper.columnTimer: _taskDuration.millisecondsSinceEpoch,
     };
     final rowsAffected = await dbHelper.update(row);
     print('updated $rowsAffected row(s)');
@@ -110,7 +115,6 @@ class AddNotePageState extends State<AddNotePage> {
           ),
           onTap: () {
             if (isSaveButton) {
-              _totalDuration = (_hour == null && _minute == null) ? 0 : _hour * 60 + _minute;
              (widget.task == null)? _insertTask() : _updateTask(widget.task);
             } else if (widget.task != null) {
               _deleteTask(widget.task);
@@ -132,7 +136,7 @@ class AddNotePageState extends State<AddNotePage> {
         child: Container(
           padding: EdgeInsets.symmetric(vertical: 20, horizontal: 15),
           child: Form(
-              key: _key,
+              key: _formValidatorKey,
               child: Column(
                 children: <Widget>[
                   TextFormField(
@@ -146,11 +150,7 @@ class AddNotePageState extends State<AddNotePage> {
                     },
                     decoration: InputDecoration(
                         labelText: 'Enter a title',
-                        hintText: 'Please enter a title',
-                        border: OutlineInputBorder(
-                          borderSide: BorderSide(color: Colors.orange),
-                          borderRadius: BorderRadius.circular(5),
-                        )),
+                        hintText: 'Please enter a title'),
                   ),
                   SizedBox(
                     height: 10,
@@ -160,12 +160,7 @@ class AddNotePageState extends State<AddNotePage> {
                     controller: _descriptionController,
                     decoration: InputDecoration(
                         labelText: 'Enter a description',
-                        hintText: 'Please enter a description',
-                        focusColor: Colors.redAccent,
-                        border: OutlineInputBorder(
-                          borderSide: BorderSide(color: Colors.purple),
-                          borderRadius: BorderRadius.circular(5),
-                        )),
+                        hintText: 'Please enter a description'),
                   ),
                   SizedBox(
                     height: 10,
@@ -176,14 +171,15 @@ class AddNotePageState extends State<AddNotePage> {
                     child: TimePicker(
                       hour: _hour,
                       minutes: _minute,
-                      seconds: null,
+                      seconds: _seconds,
                       onTap: (val) {
                         FocusScope.of(context).requestFocus(FocusNode());
-                        DatePicker.showTimePicker(context, showTitleActions: true, onConfirm: (val) {
-                          DateTime _duration = val;
+                        DatePicker.showTimePicker(context, currentTime: DateTime(0), showTitleActions: true, onConfirm: (val) {
                           setState(() {
-                            _hour = _duration.hour;
-                            _minute = _duration.minute;
+                            _hour = val.hour;
+                            _minute = val.minute;
+                            _seconds = val.second;
+                            _taskDuration = val;
                           });
                         });
                       },

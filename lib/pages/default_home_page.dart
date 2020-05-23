@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:bubble_bottom_bar/bubble_bottom_bar.dart';
 import 'package:deadly_timer/model/task.dart';
 import 'package:deadly_timer/pages/Home.dart';
@@ -9,7 +7,6 @@ import 'package:deadly_timer/pages/add_task_page.dart';
 import 'package:deadly_timer/utils/common_utils.dart';
 import 'package:deadly_timer/utils/database.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 class DefaultHomePage extends StatefulWidget {
   const DefaultHomePage({Key key}) : super(key: key);
@@ -29,14 +26,19 @@ class DefaultHomePageState extends State<DefaultHomePage> {
 
   @override
   void initState() {
+    _initEverything();
+    super.initState();
+  }
+
+  void _initEverything(){
     databaseInstance = DatabaseHelper.instance;
     _selectedIndex = 0;
     _pages = [];
     _allTasks = [];
     _currentDayTasks = [];
+    _isLoading = false;
     _getAllLocalTasks();
-      _initializePages();
-    super.initState();
+    _initializePages();
   }
 
   void getTotalDuration() {
@@ -46,13 +48,17 @@ class DefaultHomePageState extends State<DefaultHomePage> {
   }
 
   void _getAllLocalTasks() async {
+    setState(() {
+      _isLoading = true;
+    });
     List<Map<String, dynamic>> _locallySavedTasks = await databaseInstance.getAllRows();
     if (_locallySavedTasks != null && _locallySavedTasks.isNotEmpty) {
-      setState(() {
-        _locallySavedTasks.forEach((f) => _allTasks.add(Task.fromJson(f)));
-        _allTasks.sort((r1, r2) => r1.priority.compareTo(r2.priority));
-      });
+      _locallySavedTasks.forEach((f) => _allTasks.add(Task.fromJson(f)));
+      _allTasks.sort((r1, r2) => r1.priority.compareTo(r2.priority));
     }
+    setState(() {
+      _isLoading = false;
+    });
   }
 
   void _onItemTapped(int index) {
@@ -87,6 +93,11 @@ class DefaultHomePageState extends State<DefaultHomePage> {
           color: Colors.greenAccent,
         ),
         title: Text(iconName));
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
   }
 
   @override
@@ -130,21 +141,18 @@ class DefaultHomePageState extends State<DefaultHomePage> {
                           )));
               if (callback == "refresh")
                 setState(() {
-//                  _getLocalNotes();
+                  _getAllLocalTasks();
                 });
             },
           )),
-      body: _pages[_selectedIndex],
+      body:   (_isLoading)? Container(
+        height: CommonUtils.calculateHeight(context, 100),
+        color: Colors.white,
+        child: Center(
+          child: CircularProgressIndicator(
+          ),
+        ),
+      ) : _pages[_selectedIndex],
     );
   }
-
-
-//  (_isLoading)? Container(
-//  height: CommonUtils.calculateHeight(context, 100),
-//  color: Colors.white,
-//  child: Center(
-//  child: CircularProgressIndicator(
-//      ),
-//  ),
-//  ) :
 }

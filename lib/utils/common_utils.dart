@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 class CommonUtils {
-
   static Color getPriorityColor(int number) {
     Color _color;
     switch (number) {
@@ -25,7 +24,7 @@ class CommonUtils {
     return _color;
   }
 
-  static List<Color> getPriorityGradientColors(int number){
+  static List<Color> getPriorityGradientColors(int number) {
     List<Color> _color = [];
     switch (number) {
       case PRIORITY_HIGH:
@@ -48,17 +47,17 @@ class CommonUtils {
     return _color;
   }
 
-  static List<String> convertDurationToList(String duration){
-   return duration.toString().split(":");
+  static List<String> convertDurationToList(String duration) {
+    return duration.toString().split(":");
   }
 
   List<DropdownMenuItem> getPriorityOptions() => [
-    _buildPriorityMenuItem(PRIORITY_HIGH,"High"),
-    _buildPriorityMenuItem(PRIORITY_MEDIUM,"Medium"),
-    _buildPriorityMenuItem(PRIORITY_LOW,"Low"),
-  ];
+        _buildPriorityMenuItem(PRIORITY_HIGH, "High"),
+        _buildPriorityMenuItem(PRIORITY_MEDIUM, "Medium"),
+        _buildPriorityMenuItem(PRIORITY_LOW, "Low"),
+      ];
 
-  DropdownMenuItem _buildPriorityMenuItem(int priority, String text){
+  DropdownMenuItem _buildPriorityMenuItem(int priority, String text) {
     return DropdownMenuItem(
         child: Row(
           children: <Widget>[
@@ -66,7 +65,8 @@ class CommonUtils {
               margin: const EdgeInsets.only(right: 8.0),
               width: 8.0,
               height: 16.0,
-              color: getPriorityColor(priority),
+              decoration:
+                  BoxDecoration(gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: getPriorityGradientColors(priority))),
             ),
             Text(text),
           ],
@@ -74,22 +74,25 @@ class CommonUtils {
         value: priority);
   }
 
- static String getTotalDurationInHours(double seconds){
-    String _result = '';
-    if(seconds != null && seconds != 0){
-      List<String>  _hours = ((seconds/60) / 60).toString().split(".");
-      _result = (_hours[0] + _hours[1]).substring(0,6);
+  static LinearGradient appMaterialLinearGradient() => LinearGradient(begin: Alignment.centerLeft, end: Alignment.centerRight, colors: [Colors.greenAccent, Colors.teal]);
+
+  static List<String> getTotalSecondsInHours(int totalDurationInSeconds) {
+    String hours = '', minutes = '', seconds = '';
+    List<String> _totalTime = Duration(seconds: totalDurationInSeconds).toString().split(":");
+    if (_totalTime.length == 3) {
+      hours = (_totalTime[0].length == 1) ? ('0' + _totalTime[0]) : _totalTime[0];
+      minutes = (_totalTime[1].length == 1) ? ('0' + _totalTime[1]) : _totalTime[1];
+      seconds = (_totalTime[2].length == 1) ? ('0' + (_totalTime[2].split('.')[0])) : _totalTime[2].split('.')[0];
     }
-    return _result;
- }
+    return [hours, minutes, seconds];
+  }
 
- static double calculateWidth(BuildContext context, double percentage) => (MediaQuery. of(context). size.width) * percentage / 100;
+  static double calculateWidth(BuildContext context, double percentage) => (MediaQuery.of(context).size.width) * percentage / 100;
 
-  static double calculateHeight(BuildContext context, double percentage) => (MediaQuery. of(context). size.height) * percentage / 100;
+  static double calculateHeight(BuildContext context, double percentage) => (MediaQuery.of(context).size.height) * percentage / 100;
 
   static void setStatusBarIconAndColor() => SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
-    statusBarColor: Colors.white, // status bar color
-    statusBarBrightness: Brightness.light,
-    statusBarIconBrightness: Brightness.light
-  ));
+      statusBarColor: Colors.white, // status bar color
+      statusBarBrightness: Brightness.light,
+      statusBarIconBrightness: Brightness.light));
 }
