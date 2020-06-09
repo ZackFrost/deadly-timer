@@ -1,58 +1,54 @@
-import 'package:deadly_timer/components/material_add_button_component.dart';
 import 'package:deadly_timer/components/task_list_item.dart';
 import 'package:deadly_timer/model/task.dart';
 import 'package:deadly_timer/pages/add_task_page.dart';
 import 'package:deadly_timer/utils/common_utils.dart';
-import 'package:deadly_timer/utils/database.dart';
 import 'package:flutter/material.dart';
 
 class TasksPage extends StatefulWidget {
-
-  final DatabaseHelper databaseInstance;
-  final List<Task> allTasks;
-  final List<Task> currentDayTasks;
-
-  const TasksPage({Key key, this.databaseInstance, this.allTasks, this.currentDayTasks}): assert(databaseInstance !=  null), super(key: key);
-
   @override
   _TasksPageState createState() => _TasksPageState();
 }
 
 class _TasksPageState extends State<TasksPage> {
-
-  DatabaseHelper databaseInstance;
   List<Task> _tasksList = [];
   List<Task> _currentDayTasks = [];
   List<bool> _isSelected = [];
   int count = 0;
+  bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
-    _tasksList = widget.allTasks ?? [];
-    if(widget.currentDayTasks != null && widget.currentDayTasks.length > 0)  _currentDayTasks = widget.currentDayTasks;
-    databaseInstance = widget.databaseInstance;
-    _tasksList.forEach((task){
-      _isSelected.add(false);
+    _initializeTasks();
+  }
+
+  void _refreshPage(bool val){
+    setState(() {
+      _isLoading = val;
     });
   }
 
+  void _initializeTasks() async{
+    _refreshPage(true);
+    _tasksList = await CommonUtils.fetchAllLocallySavedTasks();
+    if(_tasksList != null && _tasksList.isNotEmpty){
+      _tasksList.forEach((task) => _isSelected.add(false));
+    }
+    _refreshPage(false);
+  }
 
-  String _calculateTotalSelectedItems(){
-    count = 0;
-    _isSelected.forEach((val){
-      if(val){
-        count++;
-      }
+  void _addTaskToCurrentDayList(int index, Task val){
+    setState(() {
+      _isSelected[index] = !_isSelected[index];
+        (_currentDayTasks.any((task) => task.id == val.id))? _currentDayTasks.removeWhere((task) => task.id == val.id) : _currentDayTasks.add(val);
     });
-    return count.toString();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      body: SingleChildScrollView(
+      body: (!_isLoading)? SingleChildScrollView(
         child: Container(
           padding: EdgeInsets.symmetric(horizontal: 13),
           child: Column(
@@ -65,7 +61,20 @@ class _TasksPageState extends State<TasksPage> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: <Widget>[
                     Text("Tasks", style:  TextStyle(fontWeight: FontWeight.w700, fontSize: 26)),
-                    Text(_calculateTotalSelectedItems())
+                    if(_currentDayTasks.length > 0)
+                    GestureDetector(
+                      onTap: () => CommonUtils.saveCurrentDayTasks(_currentDayTasks),
+                      child: Container(
+                        padding: EdgeInsets.symmetric(vertical: 13,horizontal: 10),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(6),
+                          gradient: LinearGradient(
+                            colors: [Colors.teal, Colors.greenAccent]
+                          )
+                        ),
+                        child: Text(" +Add ${_currentDayTasks.length} Tasks", style: TextStyle(color: Colors.white),),
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -77,37 +86,20 @@ class _TasksPageState extends State<TasksPage> {
                   itemBuilder: (BuildContext context, int index) => TaskComponent(
                     task: _tasksList[index],
                     isSelected: _isSelected[index],
-                    onTap: (val) async{
-                      String callback = await Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) => AddNotePage(
-                                dbHelper: databaseInstance,
-                                task: _tasksList[index],
-                                isDelete: true,
-                              )));
-                      if (callback == "refresh")
-                        setState(() {
-//                        _getLocalNotes();
-                        });
+                    onTap: (val) async {
+                     if(_currentDayTasks.isEmpty){
+                       dynamic callback = await CommonUtils.navigateToPageWithResult(context, AddNotePage(task: val, isDelete: true));
+                       if (callback == "refresh") _initializeTasks();
+                     } else{
+                       _addTaskToCurrentDayList(index,val);
+                     }
                     },
-                    onLongPress: (val){
-                      setState(() {
-                        _isSelected[index] = !_isSelected[index];
-                      });
-                      int value = _currentDayTasks.indexWhere((task) => task.id != _tasksList[index].id);
-                      if(value == -1){
-                        setState(() {
-                          _currentDayTasks.add(_tasksList[index]);
-//                         _isSelectionAvailable = true;
-                        });
-                      }
-                    },
+                    onLongPress: (val) => (_currentDayTasks.isEmpty)? _addTaskToCurrentDayList(index, val) : null,
                   )),
             ],
           ),
         ),
-      ),
+      )  : CommonUtils.genericLoader(context),
     );
   }
 }

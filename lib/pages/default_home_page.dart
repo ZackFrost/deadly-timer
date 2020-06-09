@@ -1,11 +1,8 @@
 import 'package:bubble_bottom_bar/bubble_bottom_bar.dart';
-import 'package:deadly_timer/model/task.dart';
 import 'package:deadly_timer/pages/Home.dart';
 import 'package:deadly_timer/pages/Menu.dart';
 import 'package:deadly_timer/pages/Tasks.dart';
 import 'package:deadly_timer/pages/add_task_page.dart';
-import 'package:deadly_timer/utils/common_utils.dart';
-import 'package:deadly_timer/utils/database.dart';
 import 'package:flutter/material.dart';
 
 class DefaultHomePage extends StatefulWidget {
@@ -18,11 +15,6 @@ class DefaultHomePage extends StatefulWidget {
 class DefaultHomePageState extends State<DefaultHomePage> {
   int _selectedIndex;
   List<Widget> _pages;
-  DatabaseHelper databaseInstance;
-  List<Task> _allTasks;
-  List<Task> _currentDayTasks;
-  int _totalDuration = 0;
-  bool _isLoading;
 
   @override
   void initState() {
@@ -31,34 +23,9 @@ class DefaultHomePageState extends State<DefaultHomePage> {
   }
 
   void _initEverything(){
-    databaseInstance = DatabaseHelper.instance;
     _selectedIndex = 0;
     _pages = [];
-    _allTasks = [];
-    _currentDayTasks = [];
-    _isLoading = false;
-    _getAllLocalTasks();
     _initializePages();
-  }
-
-  void getTotalDuration() {
-    setState(() {
-      _allTasks.forEach((task)=> _totalDuration = _totalDuration + task.timer);
-    });
-  }
-
-  void _getAllLocalTasks() async {
-    setState(() {
-      _isLoading = true;
-    });
-    List<Map<String, dynamic>> _locallySavedTasks = await databaseInstance.getAllRows();
-    if (_locallySavedTasks != null && _locallySavedTasks.isNotEmpty) {
-      _locallySavedTasks.forEach((f) => _allTasks.add(Task.fromJson(f)));
-      _allTasks.sort((r1, r2) => r1.priority.compareTo(r2.priority));
-    }
-    setState(() {
-      _isLoading = false;
-    });
   }
 
   void _onItemTapped(int index) {
@@ -69,14 +36,8 @@ class DefaultHomePageState extends State<DefaultHomePage> {
 
   void _initializePages() {
     _pages = [
-      HomePage(
-        tmpTasks: _allTasks,
-      ),
-      TasksPage(
-        databaseInstance: databaseInstance,
-        allTasks: _allTasks,
-        currentDayTasks: _currentDayTasks,
-      ),
+      HomePage(),
+      TasksPage(),
       MenuPage(),
     ];
   }
@@ -93,11 +54,6 @@ class DefaultHomePageState extends State<DefaultHomePage> {
           color: Colors.greenAccent,
         ),
         title: Text(iconName));
-  }
-
-  @override
-  void dispose() {
-    super.dispose();
   }
 
   @override
@@ -132,27 +88,9 @@ class DefaultHomePageState extends State<DefaultHomePage> {
               color: Colors.white,
               size: 32,
             ),
-            onPressed: () async {
-              String callback = await Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) => AddNotePage(
-                            dbHelper: databaseInstance,
-                          )));
-              if (callback == "refresh")
-                setState(() {
-                  _getAllLocalTasks();
-                });
-            },
+            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => AddNotePage())),
           )),
-      body:   (_isLoading)? Container(
-        height: CommonUtils.calculateHeight(context, 100),
-        color: Colors.white,
-        child: Center(
-          child: CircularProgressIndicator(
-          ),
-        ),
-      ) : _pages[_selectedIndex],
+      body: _pages[_selectedIndex],
     );
   }
 }

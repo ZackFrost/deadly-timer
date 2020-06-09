@@ -8,8 +8,9 @@ import 'package:flutter/material.dart';
 
 class TimerPage extends StatefulWidget {
   final Task currentTask;
+  final List<Task> allTasks;
 
-  const TimerPage({Key key, @required this.currentTask})
+  const TimerPage({Key key, @required this.currentTask, this.allTasks})
       : assert(currentTask != null),
         super(key: key);
 
@@ -18,31 +19,23 @@ class TimerPage extends StatefulWidget {
 }
 
 class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin {
-
   bool _isTimerStarted;
   int _seconds = 0;
   AnimationController _controller;
   int _currentTime = 0;
   DateTime taskDuration;
+  Task _task;
+  List<Task> _allTasks = [];
 
   @override
   void initState() {
     super.initState();
-    if(widget.currentTask?.timer != null)
-    taskDuration = DateTime.fromMillisecondsSinceEpoch( widget.currentTask.timer);
+    _task = widget.currentTask;
+    _allTasks = widget.allTasks;
+    if (_task?.timer != null) taskDuration = DateTime.fromMillisecondsSinceEpoch(_task.timer);
     _seconds = (taskDuration.hour * 60 * 60) + (taskDuration.minute * 60) + taskDuration.second;
-//    _seconds = widget.currentTask.timer * 60;
     _isTimerStarted = false;
-    _controller = AnimationController(
-      vsync: this,
-      duration: Duration(seconds: _seconds)
-    );
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
+    _controller = AnimationController(vsync: this, duration: Duration(seconds: _seconds));
   }
 
 //  void _startTimer() {
@@ -61,7 +54,7 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin {
 //    );
 //  }
   void timerString() {
-    Duration duration = (_controller.value != 0)? _controller.duration * _controller.value : Duration(seconds: _seconds);
+    Duration duration = (_controller.value != 0) ? _controller.duration * _controller.value : Duration(seconds: _seconds);
     _currentTime = duration.inSeconds;
   }
 
@@ -72,9 +65,17 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin {
         if (_controller.isAnimating) {
           return false;
         } else {
-//          widget.currentTask.timer = Duration(seconds: _seconds).inMinutes;
-          return true;
+          final duration = Duration(seconds: _currentTime).toString();
+          List<int> _totalTime = CommonUtils.convertDurationToList(duration);
+          DateTime taskTime = DateTime.fromMillisecondsSinceEpoch(_task.timer);
+          int remainingTime = DateTime(taskTime.year, taskTime.month, taskTime.day, _totalTime[0], _totalTime[1], _totalTime[2]).millisecondsSinceEpoch;
+          int index = _allTasks.indexWhere((task) => task.id == _task.id);
+          if(index != -1) _allTasks[index] = Task(id: _task.id, title: _task.title, description: _task.description, priority: _task.priority, timer: remainingTime);
+          CommonUtils.updateCurrentDayTasks(_allTasks);
+          _controller.dispose();
+          Navigator.pop(context, "refresh");
         }
+        return false;
       },
       child: Scaffold(
         body: Stack(children: <Widget>[
@@ -89,53 +90,60 @@ class _TimerPageState extends State<TimerPage> with TickerProviderStateMixin {
               width: CommonUtils.calculateWidth(context, 100),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: <Widget>[
-                    Container(
-                      child: AnimatedBuilder(
-                          animation: _controller,
-                          builder: (context, child){
-                            timerString();
-                            return TimerComponent(progressIndicatorHeightOrWidth: 80, totalSeconds: _currentTime);
-                          }),
-                      margin: EdgeInsets.symmetric(horizontal: 10),
-                    ),
-                    SizedBox(height: 60),
-                    InkWell(
-                      child: (!_isTimerStarted)
-                          ? Icon(
-                        Icons.play_circle_outline,
-                        size: 60,
-                        color: Colors.white,
-                      )
-                          : Icon(
-                        Icons.pause_circle_outline,
-                        size: 60,
-                        color: Colors.white,
+                children: <Widget>[
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: <Widget>[
+                      Container(
+                        child: AnimatedBuilder(
+                            animation: _controller,
+                            builder: (context, child) {
+                              timerString();
+                              return TimerComponent(progressIndicatorHeightOrWidth: 80, totalSeconds: _currentTime);
+                            }),
+                        margin: EdgeInsets.symmetric(horizontal: 10),
                       ),
-                      onTap: () {
-                        if(_controller.isAnimating){
-                          _controller.stop();
-                          setState(() {
-                            _isTimerStarted = false;
-                          });
-                        } else{
-                          _controller.reverse(from: (_controller.value == 0)? 1.0 : _controller.value);
-                          setState(() {
-                            _isTimerStarted = true;
-                          });
-                        }
-                      },
-                    )
-                  ],
-                ),
+                      SizedBox(height: 60),
+                      InkWell(
+                        child: (!_isTimerStarted)
+                            ? Icon(
+                                Icons.play_circle_outline,
+                                size: 60,
+                                color: Colors.white,
+                              )
+                            : Icon(
+                                Icons.pause_circle_outline,
+                                size: 60,
+                                color: Colors.white,
+                              ),
+                        onTap: () {
+                          if (_controller.isAnimating) {
+                            _controller.stop();
+                            setState(() {
+                              _isTimerStarted = false;
+                            });
+                          } else {
+                            _controller.reverse(from: (_controller.value == 0) ? 1.0 : _controller.value);
+                            setState(() {
+                              _isTimerStarted = true;
+                            });
+                          }
+                        },
+                      )
+                    ],
+                  ),
                   Container(
-                      margin: EdgeInsets.only(top: 80, left: 20, right:  10),
-                      child: Text("${widget.currentTask.title}" , style: TextStyle(color: Colors.white, fontSize: 30, fontWeight: FontWeight.w700),)),
+                      margin: EdgeInsets.only(top: 80, left: 20, right: 10),
+                      child: Text(
+                        "${_task.title}",
+                        style: TextStyle(color: Colors.white, fontSize: 30, fontWeight: FontWeight.w700),
+                      )),
                   Container(
-                      margin: EdgeInsets.only(top: 15, left: 20, right:  10),
-                      child: Text("Task : ${widget.currentTask.description}" , style: TextStyle(color: Colors.white70, fontSize: 17, fontWeight: FontWeight.w500),)),
+                      margin: EdgeInsets.only(top: 15, left: 20, right: 10),
+                      child: Text(
+                        "Task : ${_task.description ?? ""}",
+                        style: TextStyle(color: Colors.white70, fontSize: 17, fontWeight: FontWeight.w500),
+                      )),
                 ],
               )),
 //          Positioned(

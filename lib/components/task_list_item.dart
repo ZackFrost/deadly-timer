@@ -9,22 +9,15 @@ class TaskComponent extends StatelessWidget {
   final bool isSelected;
   final ValueSetter onLongPress;
   final ValueSetter onTap;
-
   const TaskComponent({this.task, this.isSelected = false, this.onLongPress, this.onTap});
 
   @override
   Widget build(BuildContext context) {
-
-//    List<String> _time = CommonUtils.convertDurationToList(Duration(minutes: task?.timer)?.toString());
-  DateTime _taskDuration = (task.timer != null)? DateTime.fromMillisecondsSinceEpoch(task.timer) : DateTime(DateTime.now().year);
-//  String hours = (_time != null && _time.length == 1)? "00" : _time[0];
-//  String minutes = (_time != null && _time.length == 1)? "00" :  _time[1];
-//  String seconds =  (_time != null && _time.length == 1)? "00" :  _time[2].split(".")[0];
-    Color  priorityColor = CommonUtils.getPriorityColor(task?.priority);
+    DateTime _taskDuration = (task.timer != null)? DateTime.fromMillisecondsSinceEpoch(task.timer) : DateTime(DateTime.now().year);
     List<Color>  _gradientColors = CommonUtils.getPriorityGradientColors(task?.priority);
     return InkWell(
-      onTap: () => onTap(true),
-      onLongPress: () => onLongPress(true),
+      onTap: () => onTap(task),
+      onLongPress: () => (!isSelected)? onLongPress(task) : null,
       child: Container(
         margin: EdgeInsets.only(bottom: 7),
         child: Card(

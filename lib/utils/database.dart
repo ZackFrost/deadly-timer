@@ -1,22 +1,20 @@
 import 'dart:io';
-
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path_provider/path_provider.dart';
 
 class DatabaseHelper {
 
-  static final _databaseName = "taskDatabase.db";
+  static final _databaseName = "tasksDatabase.db";
   static final _databaseVersion = 1;
 
-  static final table = 'Task';
+  static final table = 'Tasks';
 
   static final columnId = '_id';
   static final columnTitle = 'title';
   static final columnDescription = 'description';
   static final columnPriority = 'priority';
-  static final columnTimer = 'Timer';
-  static final columnCurrentDayTasks = "currentDayTasks";
+  static final columnTimer = 'timer';
 
   // make this a singleton class
   DatabaseHelper._privateConstructor();
@@ -48,8 +46,7 @@ class DatabaseHelper {
             $columnTitle TEXT NOT NULL,
             $columnDescription TEXT,
             $columnPriority INTEGER,
-            $columnTimer, TEXT,
-            $columnCurrentDayTasks, BLOB
+            $columnTimer INTEGER
           )
           ''');
   }

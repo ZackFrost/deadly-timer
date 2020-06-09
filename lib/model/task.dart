@@ -28,7 +28,7 @@ class Task {
     title: json["title"] == null ? null : json["title"],
     description: json["description"] == null ? null : json["description"],
     priority: json["priority"] == null ? null : json["priority"],
-    timer: json["Timer"] == null ? null : json["Timer"],
+    timer: json["timer"] == null ? null : json["timer"],
   );
 
   Map<String, dynamic> toJson() => {
@@ -36,6 +36,6 @@ class Task {
     "title": title == null ? null : title,
     "description": description == null ? null : description,
     "priority": priority == null ? null : priority,
-    "Timer": timer == null ? null : timer,
+    "timer": timer == null ? null : timer,
   };
 }
